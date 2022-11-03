@@ -1,50 +1,95 @@
 // Import the functions you need from the SDKs you need
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.12.1/firebase-app.js";
-import { getDatabase, ref, onChildAdded, set } from "https://www.gstatic.com/firebasejs/9.12.1/firebase-database.js";
+import {
+  getDatabase,
+  ref,
+  onChildAdded,
+  set,
+} from "https://www.gstatic.com/firebasejs/9.12.1/firebase-database.js";
+import {
+  getAuth,
+  signInWithEmailAndPassword,
+} from "https://www.gstatic.com/firebasejs/9.12.1/firebase-auth.js";
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
-    apiKey: "AIzaSyCiL7D1h3ZaoXdyoMXbgQ7b8RaUc6jdQ9g",
-    authDomain: "pog22-8b683.firebaseapp.com",
-    projectId: "pog22-8b683",
-    storageBucket: "pog22-8b683.appspot.com",
-    messagingSenderId: "793659510891",
-    appId: "1:793659510891:web:2fd69d58c30ea247b7e12e",
-    databaseURL: "https://pog22-8b683-default-rtdb.europe-west1.firebasedatabase.app/"
+  apiKey: "AIzaSyBJ1ifqdKfq70CitT24qyjTLRDPzEWwGDI",
+  authDomain: "prog22-chat.firebaseapp.com",
+  databaseURL:
+    "https://prog22-chat-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "prog22-chat",
+  storageBucket: "prog22-chat.appspot.com",
+  messagingSenderId: "562350332057",
+  appId: "1:562350332057:web:3e70876ffd2af745d8c008",
 };
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
-// initializes Realtime Database and get a reference service
+
+// Auth
+// ========================================================
+
+// Set variable with Boostrap modal
+const loginModal = new bootstrap.Modal("#login-modal");
+loginModal.show();
+
+// Listen for click on login button
+document.querySelector("#login-button").addEventListener("click", function () {
+  const email = document.querySelector("#email").value;
+  const password = document.querySelector("#password").value;
+  const auth = getAuth();
+
+  // Sign in with Firebase
+  signInWithEmailAndPassword(auth, email, password)
+    .then((userCredential) => {
+      // Signed in
+      const user = userCredential.user;
+      console.log(user);
+
+      // Hide modal
+      loginModal.hide();
+
+      // Call function to init database
+      initDatabase();
+    })
+    .catch((error) => {
+      console.log(error);
+    });
+});
+
+// Database
+// ========================================================
 const db = getDatabase(app);
 
-// create reference, where in the database we want to take info from
-const chatRef = ref(db, '/chat');
+// initializes Realtime Database and get a reference service
+function initDatabase() {
+  // create reference, where in the database we want to take info from
+  const chatRef = ref(db, "/chat");
 
-
-// listens for database changes
-onChildAdded(chatRef, function (data) {
-
+  // listens for database changes
+  onChildAdded(chatRef, function (data) {
     // create element and append to list element
-    const message = document.createElement("li")
-    message.innerText = new Date(data.key).toLocaleDateString("fi-FI") + ": " + data.val();
+    const list = document.querySelector("ul");
+    const message = document.createElement("li");
 
-    list.appendChild(message)
-})
+    message.innerText =
+      new Date(data.key).toLocaleDateString("fi-FI") + ": " + data.val();
 
+    list.appendChild(message);
+  });
+}
+
+// New message
 const input = document.querySelector("input");
-const list = document.querySelector("ul")
 
 input.addEventListener("keypress", function (event) {
-    if (event.key == "Enter") {
+  if (event.key == "Enter") {
+    // create 'unique' id for message
+    const messageId = new Date().toUTCString();
 
-        // create 'unique' id for message
-        const messageId = new Date().toUTCString();
+    // send to database
+    set(ref(db, "chat/" + messageId), input.value);
 
-        // send to database
-        set(ref(db, "chat/" + messageId), input.value)
-
-
-        // clear input
-        input.value = "";
-    }
-})
+    // clear input
+    input.value = "";
+  }
+});
